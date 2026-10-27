@@ -1,121 +1,93 @@
 import MiniHero from "../common/MiniHero";
 import PapelPicado from "../common/PapelPicado";
 import Garland from "../common/Garland";
-import Candle from "../common/Candle";
-import Portrait from "../common/Portrait";
-import { getStatus } from "../../data/initialPeople";
+import AltarNiche from "../common/AltarNiche";
 
 export default function OfrendaView({ people, onNavigate, lang, t }) {
   const fadingRelative = people[3] || people[0];
 
   return (
-    <div>
+    <div className="ofrenda-page">
       <MiniHero
         eyebrow={t.ofrenda.eyebrow}
         title={t.ofrenda.title}
         subtitle={t.ofrenda.subtitle}
       />
 
-      <div className="scene" style={{ paddingTop: "40px" }}>
+      {/* Main Sacred Altar */}
+      <div className="scene altar-scene">
         <div className="altar">
-          {/* Tier 1 */}
+          {/* TIER 1 - TOP SHELF (El Cielo - Heaven) */}
           <div className="tier t1">
             <PapelPicado height={46} />
-            <svg className="dc dc-side" width="74" height="74">
-              <use href="#sk" width="74" height="74" />
-            </svg>
-            <div
-              className="c2"
-              onClick={() => onNavigate(`person-${people[0].id}`)}
-            >
-              <Candle glow={people[0].glow} />
-              <Portrait person={people[0]} width={120} />
-              <div className="nm">{people[0].name}</div>
-              <small>
-                {getStatus(people[0].glow, lang)} · {people[0].last} {t.ofrenda.daysAgo}
-              </small>
+            <div className="tier-content">
+              <AltarNiche
+                person={people[0]}
+                onNavigate={onNavigate}
+                lang={lang}
+                t={t}
+                width={128}
+              />
             </div>
-            <svg className="dc dc-side" width="74" height="74">
-              <use href="#sk" width="74" height="74" />
-            </svg>
+            <div className="shelf-lip" />
           </div>
 
-          {/* Tier 2 */}
+          {/* TIER 2 - MIDDLE SHELF (La Tierra - Earth) */}
           <div className="tier t2">
             <PapelPicado height={46} />
-            <svg className="dc dc-side" width="86" height="86">
-              <use href="#bd" width="86" height="86" />
-            </svg>
-            <div
-              className="c2"
-              onClick={() => onNavigate(`person-${people[1].id}`)}
-            >
-              <Candle glow={people[1].glow} />
-              <Portrait person={people[1]} width={120} />
-              <div className="nm">{people[1].name}</div>
-              <small>
-                {getStatus(people[1].glow, lang)} · {people[1].last} {t.ofrenda.daysAgo}
-              </small>
+            <div className="tier-content">
+              <div className="tier-row">
+                <AltarNiche
+                  person={people[1]}
+                  onNavigate={onNavigate}
+                  lang={lang}
+                  t={t}
+                  width={116}
+                />
+                <AltarNiche
+                  person={people[2]}
+                  onNavigate={onNavigate}
+                  lang={lang}
+                  t={t}
+                  width={116}
+                />
+              </div>
             </div>
-            <div
-              className="c2"
-              onClick={() => onNavigate(`person-${people[2].id}`)}
-            >
-              <Candle glow={people[2].glow} />
-              <Portrait person={people[2]} width={120} />
-              <div className="nm">{people[2].name}</div>
-              <small>
-                {getStatus(people[2].glow, lang)} · {people[2].last} {t.ofrenda.daysAgo}
-              </small>
-            </div>
-            <svg className="dc dc-side" width="86" height="86">
-              <use href="#bd" width="86" height="86" />
-            </svg>
+            <div className="shelf-lip" />
           </div>
 
-          {/* Tier 3 */}
+          {/* TIER 3 - BASE SHELF (El Recuerdo - Memory) */}
           <div className="tier t3">
             <PapelPicado height={46} />
-            <svg className="dc dc-side" width="84" height="84">
-              <use href="#mg" width="84" height="84" />
-            </svg>
-            <div
-              className="c2"
-              onClick={() => onNavigate(`person-${people[3].id}`)}
-            >
-              <Candle glow={people[3].glow} />
-              <Portrait person={people[3]} width={120} />
-              <div className="nm">{people[3].name}</div>
-              <small>
-                {getStatus(people[3].glow, lang)} · {people[3].last} {t.ofrenda.daysAgo}
-              </small>
+            <div className="tier-content">
+              <AltarNiche
+                person={people[3]}
+                onNavigate={onNavigate}
+                lang={lang}
+                t={t}
+                width={120}
+              />
             </div>
-            <svg className="dc dc-side" width="86" height="86">
-              <use href="#bd" width="86" height="86" />
-            </svg>
-            <svg className="dc dc-side" width="84" height="84">
-              <use href="#mg" width="84" height="84" />
-            </svg>
+            <div className="shelf-lip" />
           </div>
         </div>
+
+        {/* Golden Cempasúchil garland base */}
         <Garland className="fl" />
       </div>
 
+      {/* Fading Relative Call-to-action Banner */}
       <div className="wrap" style={{ padding: "40px 24px 70px" }}>
-        <div className="card row" style={{ justifyContent: "space-between" }}>
-          <span>
-            <b
-              style={{
-                fontFamily: "var(--font-cormorant), serif",
-                fontSize: "1.6rem",
-              }}
-            >
-              {fadingRelative.name}
-            </b>{" "}
-            <span style={{ color: "var(--mut)" }}>
-              {t.ofrenda.unvisitedAlert} {fadingRelative.last} {t.ofrenda.unvisitedAlertEnd}
-            </span>
-          </span>
+        <div className="card row fading-card">
+          <div className="fading-card-text">
+            <span className="fading-icon" aria-hidden="true">🕯️</span>
+            <div>
+              <b className="fading-name">{fadingRelative.name}</b>{" "}
+              <span className="fading-desc">
+                {t.ofrenda.unvisitedAlert} <strong>{fadingRelative.last}</strong> {t.ofrenda.unvisitedAlertEnd}
+              </span>
+            </div>
+          </div>
           <a className="btn" onClick={() => onNavigate("add")}>
             {t.ofrenda.addStory}
           </a>
