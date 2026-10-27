@@ -1,21 +1,38 @@
 import { useState, useEffect } from "react";
 import MiniHero from "../common/MiniHero";
 
-export default function AskView({ people, onNavigate }) {
+export default function AskView({ people, onNavigate, lang, t }) {
   const [askWho, setAskWho] = useState("all");
   const [question, setQuestion] = useState("");
   const [chatMessages, setChatMessages] = useState([]);
+
+  const sampleQuestions =
+    lang === "es"
+      ? [
+          "¿Qué cantaba el Abuelo en la camioneta?",
+          "¿Qué cocinaba la Abuela los domingos?",
+          "¿Cómo era el taller de carpintería del Tío Chema?",
+          "¿Cuál era el color favorito de la Abuela?",
+        ]
+      : [
+          "What did Abuelo sing in the truck?",
+          "What did Abuela cook on Sundays?",
+          "What was Tío Chema’s workshop like?",
+          "What was Abuela’s favorite color?",
+        ];
 
   const handleAsk = (queryText) => {
     const q = (queryText || question).trim();
     if (!q) return;
 
-    const stopWords = "what did was the his her and with that for from about like".split(
+    const stopWords = "what did was the his her and with that for from about like que cantaba era el la en los las con del".split(
       " "
     );
     const synonyms = {
-      sing: ["sang", "song"],
-      cook: ["served", "ground", "mole"],
+      sing: ["sang", "song", "cantar", "cantaba"],
+      cook: ["served", "ground", "mole", "cocinaba", "tamales", "preparaba"],
+      cantaba: ["sang", "cielito", "sabor a mí", "canción", "truck", "camioneta"],
+      cocinaba: ["mole", "tamales", "domingo", "chiles", "sunday"],
     };
 
     const words = q
@@ -68,7 +85,7 @@ export default function AskView({ people, onNavigate }) {
           }
         : {
             type: "not-found",
-            text: "I don’t have a memory of that yet.",
+            text: t.ask.notFound,
           },
     ]);
 
@@ -77,16 +94,20 @@ export default function AskView({ people, onNavigate }) {
 
   useEffect(() => {
     if (chatMessages.length === 0) {
-      handleAsk("What did Abuelo sing in the truck?");
+      handleAsk(
+        lang === "es"
+          ? "¿Qué cantaba el Abuelo en la camioneta?"
+          : "What did Abuelo sing in the truck?"
+      );
     }
-  }, []);
+  }, [lang]);
 
   return (
     <div>
       <MiniHero
-        eyebrow="Search"
-        title="Ask a memory"
-        subtitle="Answers come only from stories you have saved. Nothing is invented."
+        eyebrow={t.ask.eyebrow}
+        title={t.ask.title}
+        subtitle={t.ask.subtitle}
       />
 
       <div
@@ -94,13 +115,13 @@ export default function AskView({ people, onNavigate }) {
         style={{ maxWidth: "800px", padding: "56px 24px 80px" }}
       >
         <div className="card" style={{ padding: "18px" }}>
-          <div className="row">
+          <div className="row" style={{ alignItems: "stretch" }}>
             <select
-              style={{ width: "190px" }}
+              style={{ flex: "1 1 150px", minWidth: "140px" }}
               value={askWho}
               onChange={(e) => setAskWho(e.target.value)}
             >
-              <option value="all">Everyone</option>
+              <option value="all">{t.ask.everyone}</option>
               {people.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.name}
@@ -109,27 +130,26 @@ export default function AskView({ people, onNavigate }) {
             </select>
 
             <input
-              placeholder="What did Abuelo sing in the truck?"
-              style={{ flex: 1, minWidth: "200px" }}
+              placeholder={t.ask.placeholder}
+              style={{ flex: "3 1 220px", minWidth: "180px" }}
               value={question}
               onChange={(e) => setQuestion(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleAsk()}
             />
 
-            <button className="btn" onClick={() => handleAsk()}>
-              Ask
+            <button
+              className="btn"
+              style={{ flex: "0 1 auto" }}
+              onClick={() => handleAsk()}
+            >
+              {t.ask.askBtn}
             </button>
           </div>
         </div>
 
         <div className="row" style={{ marginTop: "16px" }}>
-          <span style={{ color: "var(--mut)" }}>Try:</span>
-          {[
-            "What did Abuelo sing in the truck?",
-            "What did Abuela cook on Sundays?",
-            "What was Tío Chema’s workshop like?",
-            "What was Abuela’s favorite color?",
-          ].map((sampleQ, idx) => (
+          <span style={{ color: "var(--mut)" }}>{t.ask.tryLabel}</span>
+          {sampleQuestions.map((sampleQ, idx) => (
             <button
               key={idx}
               className="btn ghost"
@@ -162,7 +182,7 @@ export default function AskView({ people, onNavigate }) {
                     className="cite"
                     onClick={() => onNavigate(`person-${msg.citation.personId}`)}
                   >
-                    SOURCE · {msg.citation.storyTitle} ·{" "}
+                    {t.ask.source} · {msg.citation.storyTitle} ·{" "}
                     {msg.citation.personName} →
                   </div>
                 </div>
@@ -170,12 +190,12 @@ export default function AskView({ people, onNavigate }) {
             }
             return (
               <div key={index} className="msg">
-                I don’t have a memory of that yet.{" "}
+                {t.ask.notFound}{" "}
                 <a
                   onClick={() => onNavigate("add")}
                   style={{ color: "var(--teal)", fontWeight: 700 }}
                 >
-                  Add one →
+                  {t.ask.addOne}
                 </a>
               </div>
             );

@@ -234,10 +234,13 @@ Steps: validate → insert story and facts → embed `title + body` → insert i
   "excerpt": "first story body", "favorites": ["Mole negro", "Cielito Lindo"] }
 ```
 
+### `GET /people/{id}/narrate`
+Generate offline speech for the person's keepsake story using local Piper TTS (`.wav` audio stream). Accepts optional query param `?lang=en|es` (defaults to detected language). Returns `audio/wav`.
+
 ### `GET /health`
 ```json
 { "ollama": true, "llm_model": "gemma3:4b", "embed_model": "nomic-embed-text",
-  "whisper_model": "small", "db": true }
+  "whisper_model": "small", "piper_tts": true, "db": true }
 ```
 If a model is missing, return which one and the exact `ollama pull ...` command so the UI can show it.
 
@@ -248,9 +251,9 @@ If a model is missing, return which one and the exact `ollama pull ...` command 
 
 ---
 
-## 7. Prompts
+## 7. Prompts & Multilingual Handling
 
-### 7.1 Fact extraction
+### 7.1 Fact extraction (Bilingual EN/ES)
 
 **System**
 ```text
@@ -259,7 +262,8 @@ Schema: {"facts":[{"kind":"food|song|saying|place","value":string,"quote":string
 Rules:
 - Include only items explicitly stated in the text. Never infer or add details.
 - "quote" must be copied exactly from the text, character for character.
-- "value" is a short clean label (e.g. "Mole negro").
+- "value" is a short clean label (e.g. "Mole negro" or "Cielito Lindo").
+- Handles English and Spanish stories identically.
 - If nothing qualifies, return {"facts":[]}.
 ```
 **User**
@@ -271,16 +275,18 @@ Memory:
 ```
 Use temperature 0 to 0.2, `format: json` or JSON-mode where supported.
 
-### 7.2 Grounded answering
+### 7.2 Grounded answering (Bilingual EN/ES)
 
 **System**
 ```text
 You answer questions about a person using ONLY the numbered memories provided.
 Rules:
 - Never speak as the person. Refer to them in the third person.
+- Answer in the same language as the question (English or Spanish).
 - Do not use outside knowledge or guess.
 - If the memories do not answer the question, return exactly:
   {"answer":"I don't have a memory of that yet.","citations":[]}
+  (or in Spanish: {"answer":"Aún no tengo un recuerdo sobre eso.","citations":[]})
 - Otherwise return {"answer": string, "citations":[memory ids used]}.
 - Keep the answer to 1 to 3 sentences, warm and plain.
 Return JSON only.
@@ -294,68 +300,17 @@ Memories:
 Question: {question}
 ```
 
-### 7.3 Post-processing rules (in `retrieval.py`)
-1. Embed the question and fetch top `TOP_K` stories by cosine similarity.
-2. Drop results below `MIN_RELEVANCE`. If none remain, skip the LLM and return the refusal string with `grounded: false`.
-3. After the LLM responds, keep only citation ids that were in the retrieved set. If zero valid citations remain, return the refusal string.
-4. Never return an answer that has no valid citation.
-
 ---
 
-## 8. Glow Engine, `src/domain/glow.py`
+## 10. The 3-Phase Build Plan (Post-Frontend)
 
-```text
-glow = clamp( BASE + STORY_W × min(stories, STORY_CAP) + FACT_W × min(facts, FACT_CAP) − DECAY × days_since_touch , 0, 100 )
-```
-Defaults: `BASE=20, STORY_W=12, STORY_CAP=5, FACT_W=2, FACT_CAP=10, DECAY=0.5`.
+The remaining development is organized into 3 coherent, production-ready phases:
 
-| Glow | Status label |
-|---|---|
-| 76 to 100 | Burning bright |
-| 46 to 75 | Glowing |
-| 21 to 45 | Fading |
-| 0 to 20 | Nearly dark |
-
-`days_since_touch` is derived from `last_touched`. Touch events: saving a memory (full reset), asking a question that cites the person (partial: set `last_touched` to now), opening the person page (optional, behind a config flag). Compute on read so no background job is needed.
-
----
-
-## 9. Configuration (`.env`)
-
-```env
-LLM_BASE_URL=http://localhost:11434/v1
-LLM_API_KEY=ollama
-LLM_MODEL=gemma3:4b
-EMBED_MODEL=nomic-embed-text
-WHISPER_MODEL=small
-WHISPER_DEVICE=cpu
-WHISPER_COMPUTE=int8
-DATA_DIR=./data
-TOP_K=4
-MIN_RELEVANCE=0.35
-GLOW_BASE=20
-GLOW_STORY_W=12
-GLOW_FACT_W=2
-GLOW_DECAY=0.5
-CORS_ORIGINS=http://localhost:8000,http://127.0.0.1:8000
-```
-
----
-
-## 10. Build Phases
-
-Complete in order. Each phase ends in a working app.
-
-| Phase | Deliverable | Done when |
-|---|---|---|
-| **1. Skeleton** | FastAPI app, config, SQLite schema, static file serving, `/health` | `/health` reports Ollama reachable and model status |
-| **2. People & storage** | `GET/POST /people`, photo upload, glow engine with unit tests | Frontend ofrenda renders from the API, photo persists after refresh |
-| **3. Transcription** | `/transcribe`, browser recording in Add Memory | A spoken 30 s clip fills the textarea locally |
-| **4. Extraction** | `/extract` with quote verification, approval UI | Unapproved facts are never saved; bad quotes are dropped |
-| **5. Memories & embeddings** | `/memories`, embedding, `story_vec` insert | Saving a story raises glow and appears on the person page |
-| **6. Ask** | `/ask` with threshold and citation validation | Out-of-scope question returns the exact refusal string |
-| **7. Keepsake & polish** | `/keepsake`, print view, error toasts, empty states | Print preview looks correct; model-missing errors are readable |
-| **8. Stretch** | Fading-candle reminders, model comparison view, optional local TTS | Optional |
+| Phase | Focus | Deliverables | Verification / Acceptance |
+|---|---|---|---|
+| **Phase 1: Backend Foundation & Persistence** | Data Layer & API Server | FastAPI app (`src/api.py`), Pydantic schemas (`src/domain/schemas.py`), SQLite + sqlite-vec store (`src/adapters/store_sqlite.py`), local file store for photos/audio (`src/adapters/files_local.py`), Glow Engine with unit tests (`src/domain/glow.py`). | Database migrations run cleanly, `pytest tests/test_glow.py` passes, CRUD for people & photo uploads work from frontend. |
+| **Phase 2: Open-Weight AI Pipelines** | Whisper, Gemma, Embeddings & Piper | `faster-whisper` adapter for audio transcription (`POST /api/transcribe`), Ollama Gemma adapter for bilingual quote-verified fact extraction (`POST /api/extract`), `nomic-embed-text` vector search + retrieval refuse rules (`POST /api/ask`), and local Piper TTS narration (`GET /api/people/{id}/narrate`). | Real spoken audio transcribes locally in <15s, facts extract with strict verbatim quotes, Q&A retrieves answers with citations or returns refusal string, Piper generates audio offline. |
+| **Phase 3: End-to-End Integration & Verification** | Full System Integration & Offline Hardening | Connect Next.js frontend to FastAPI backend, test complete memory lifecycle from browser voice record to altar candle glow, run end-to-end integration tests (`pytest tests/test_e2e.py`), verify 100% offline functionality with Wi-Fi disabled, and package `.ofrenda` archive export/import. | App runs with 0 internet connection, all tests pass, submission post draft with DevRelay session ready for Hacktoberfest. |
 
 ---
 

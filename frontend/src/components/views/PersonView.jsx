@@ -2,17 +2,17 @@ import MiniHero from "../common/MiniHero";
 import Portrait from "../common/Portrait";
 import { getStatus } from "../../data/initialPeople";
 
-export default function PersonView({ person, onPhotoUpload, onNavigate }) {
+export default function PersonView({ person, onPhotoUpload, onNavigate, lang, t }) {
   if (!person) return null;
 
   return (
     <div>
       <MiniHero
-        eyebrow={`${person.rel} · ${getStatus(person.glow)}`}
+        eyebrow={`${person.rel} · ${getStatus(person.glow, lang)}`}
         title={person.name}
         subtitle={`${person.stories.length} ${
-          person.stories.length === 1 ? "story" : "stories"
-        } kept`}
+          person.stories.length === 1 ? t.person.storyKept : t.person.storiesKept
+        }`}
       />
 
       <div className="wrap cols" style={{ padding: "56px 24px 80px" }}>
@@ -30,7 +30,7 @@ export default function PersonView({ person, onPhotoUpload, onNavigate }) {
                   fontSize: "0.88rem",
                 }}
               >
-                Add a photo
+                {t.person.addPhoto}
                 <input
                   type="file"
                   accept="image/*"
@@ -44,7 +44,7 @@ export default function PersonView({ person, onPhotoUpload, onNavigate }) {
 
           <div className="card" style={{ marginTop: "22px" }}>
             <div className="lbl" style={{ marginTop: 0 }}>
-              Foods
+              {t.person.foods}
             </div>
             {person.foods.length ? (
               person.foods.map((f, i) => (
@@ -62,7 +62,7 @@ export default function PersonView({ person, onPhotoUpload, onNavigate }) {
               </span>
             )}
 
-            <div className="lbl">Songs</div>
+            <div className="lbl">{t.person.songs}</div>
             {person.songs.length ? (
               person.songs.map((s, i) => (
                 <span
@@ -79,7 +79,7 @@ export default function PersonView({ person, onPhotoUpload, onNavigate }) {
               </span>
             )}
 
-            <div className="lbl">Sayings</div>
+            <div className="lbl">{t.person.sayings}</div>
             {person.say.length ? (
               person.say.map((s, i) => (
                 <span
@@ -99,16 +99,16 @@ export default function PersonView({ person, onPhotoUpload, onNavigate }) {
 
           <div className="row" style={{ marginTop: "22px" }}>
             <a className="btn" onClick={() => onNavigate("add")}>
-              Add memory
+              {t.person.addMemoryBtn}
             </a>
             <a className="btn ghost" onClick={() => onNavigate("ask")}>
-              Ask
+              {t.person.askBtn}
             </a>
           </div>
         </div>
 
         <div>
-          <h2>Stories</h2>
+          <h2>{t.person.stories}</h2>
           {person.stories.length ? (
             person.stories.map((s, i) => (
               <div className="note" key={i}>
@@ -130,10 +130,7 @@ export default function PersonView({ person, onPhotoUpload, onNavigate }) {
             ))
           ) : (
             <div className="note">
-              <p>
-                No stories yet. A single small memory is enough to light
-                the candle.
-              </p>
+              <p>{t.person.noStories}</p>
             </div>
           )}
         </div>

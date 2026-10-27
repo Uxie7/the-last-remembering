@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { INITIAL_PEOPLE } from "../data/initialPeople";
+import { translations } from "../data/translations";
 
 // Common UI components
 import SvgDefs from "../components/common/SvgDefs";
@@ -22,7 +23,10 @@ export default function App() {
   const [currentRoute, setCurrentRoute] = useState("home");
   const [activePersonId, setActivePersonId] = useState("lupita");
   const [toastMessage, setToastMessage] = useState("");
+  const [lang, setLang] = useState("en");
   const toastTimeoutRef = useRef(null);
+
+  const t = translations[lang];
 
   const showToast = (msg) => {
     setToastMessage(msg);
@@ -30,6 +34,12 @@ export default function App() {
     toastTimeoutRef.current = setTimeout(() => {
       setToastMessage("");
     }, 2500);
+  };
+
+  const handleToggleLang = () => {
+    const nextLang = lang === "en" ? "es" : "en";
+    setLang(nextLang);
+    showToast(nextLang === "es" ? "Idioma cambiado a Español" : "Language switched to English");
   };
 
   // Synchronize hash routing
@@ -64,7 +74,7 @@ export default function App() {
       setPeople((prev) =>
         prev.map((p) => (p.id === personId ? { ...p, img: reader.result } : p))
       );
-      showToast("Photo added. It stays on this device.");
+      showToast(t.person.photoSaved);
     };
     reader.readAsDataURL(file);
   };
@@ -78,7 +88,7 @@ export default function App() {
         const newStories = [
           {
             t: title,
-            d: "Today",
+            d: lang === "es" ? "Hoy" : "Today",
             x: story,
           },
           ...p.stories,
@@ -111,7 +121,7 @@ export default function App() {
       })
     );
 
-    showToast("Saved. The candle burns brighter.");
+    showToast(t.add.savedSuccess);
     navigate(`person-${personId}`);
   };
 
@@ -120,13 +130,26 @@ export default function App() {
   return (
     <>
       <SvgDefs />
-      <Navbar currentRoute={currentRoute} onNavigate={navigate} />
+      <Navbar
+        currentRoute={currentRoute}
+        onNavigate={navigate}
+        lang={lang}
+        onToggleLang={handleToggleLang}
+        t={t}
+      />
 
       <main id="app">
-        {currentRoute === "home" && <HomeView onNavigate={navigate} />}
+        {currentRoute === "home" && (
+          <HomeView onNavigate={navigate} t={t} />
+        )}
 
         {currentRoute === "ofrenda" && (
-          <OfrendaView people={people} onNavigate={navigate} />
+          <OfrendaView
+            people={people}
+            onNavigate={navigate}
+            lang={lang}
+            t={t}
+          />
         )}
 
         {currentRoute === "person" && (
@@ -134,6 +157,8 @@ export default function App() {
             person={activePerson}
             onPhotoUpload={handlePhotoUpload}
             onNavigate={navigate}
+            lang={lang}
+            t={t}
           />
         )}
 
@@ -143,11 +168,18 @@ export default function App() {
             activePersonId={activePersonId}
             onSaveMemory={handleSaveMemory}
             showToast={showToast}
+            lang={lang}
+            t={t}
           />
         )}
 
         {currentRoute === "ask" && (
-          <AskView people={people} onNavigate={navigate} />
+          <AskView
+            people={people}
+            onNavigate={navigate}
+            lang={lang}
+            t={t}
+          />
         )}
 
         {currentRoute === "export" && (
@@ -155,6 +187,8 @@ export default function App() {
             people={people}
             activePersonId={activePersonId}
             onSelectPerson={setActivePersonId}
+            lang={lang}
+            t={t}
           />
         )}
       </main>

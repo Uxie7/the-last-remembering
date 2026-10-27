@@ -93,9 +93,10 @@ export const KNOWN_FOODS = [
   "elote",
 ];
 
-export function getStatus(glow) {
-  if (glow > 75) return "Burning bright";
-  if (glow > 45) return "Glowing";
-  if (glow > 20) return "Fading";
-  return "Nearly dark";
+export function getStatus(glow, lang = "en") {
+  const isEs = lang === "es";
+  if (glow > 75) return isEs ? "Llama viva" : "Burning bright";
+  if (glow > 45) return isEs ? "Resplandeciente" : "Glowing";
+  if (glow > 20) return isEs ? "Atenuándose" : "Fading";
+  return isEs ? "Casi extinta" : "Nearly dark";
 }

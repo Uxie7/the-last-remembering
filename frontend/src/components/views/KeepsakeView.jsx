@@ -1,20 +1,52 @@
+import { useState } from "react";
 import MiniHero from "../common/MiniHero";
 import PapelPicado from "../common/PapelPicado";
 import Portrait from "../common/Portrait";
 
-export default function KeepsakeView({ people, activePersonId, onSelectPerson }) {
+export default function KeepsakeView({
+  people,
+  activePersonId,
+  onSelectPerson,
+  lang,
+  t,
+}) {
+  const [isSpeaking, setIsSpeaking] = useState(false);
   const activePerson = people.find((p) => p.id === activePersonId) || people[0];
+
+  const handleSpeak = () => {
+    if (!window.speechSynthesis) return;
+
+    if (isSpeaking) {
+      window.speechSynthesis.cancel();
+      setIsSpeaking(false);
+      return;
+    }
+
+    const storyText = activePerson.stories[0]?.x || t.keepsake.defaultExcerpt;
+    const utterance = new SpeechSynthesisUtterance(storyText);
+    utterance.lang = lang === "es" ? "es-MX" : "en-US";
+    utterance.rate = 0.92; // warm, gentle storytelling tempo
+
+    utterance.onend = () => setIsSpeaking(false);
+    utterance.onerror = () => setIsSpeaking(false);
+
+    window.speechSynthesis.speak(utterance);
+    setIsSpeaking(true);
+  };
 
   return (
     <div>
       <MiniHero
-        eyebrow="Keepsake"
-        title="Remembrance page"
-        subtitle="A printable page to place beside the candle."
+        eyebrow={t.keepsake.eyebrow}
+        title={t.keepsake.title}
+        subtitle={t.keepsake.subtitle}
       />
 
       <div className="wrap" style={{ padding: "56px 24px 80px" }}>
-        <div className="row noprint c" style={{ marginBottom: "28px" }}>
+        <div
+          className="row noprint c"
+          style={{ marginBottom: "28px", gap: "14px" }}
+        >
           <select
             style={{ width: "240px" }}
             value={activePerson.id}
@@ -26,8 +58,25 @@ export default function KeepsakeView({ people, activePersonId, onSelectPerson })
               </option>
             ))}
           </select>
+
+          {/* Local Piper TTS Voice Narration Demo */}
+          <button
+            className="btn ghost"
+            style={{
+              color: isSpeaking ? "#ff5fa2" : "var(--ink)",
+              borderColor: isSpeaking ? "#ff5fa2" : "currentColor",
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+            }}
+            onClick={handleSpeak}
+          >
+            <span>{isSpeaking ? "🔊" : "🎙️"}</span>
+            <span>{isSpeaking ? t.keepsake.listeningBtn : t.keepsake.listenBtn}</span>
+          </button>
+
           <button className="btn" onClick={() => window.print()}>
-            Print
+            {t.keepsake.printBtn}
           </button>
         </div>
 
@@ -51,7 +100,7 @@ export default function KeepsakeView({ people, activePersonId, onSelectPerson })
           >
             {activePerson.stories[0]
               ? activePerson.stories[0].x
-              : "Their story is still waiting to be told."}
+              : t.keepsake.defaultExcerpt}
           </p>
           <p>
             {[...activePerson.foods, ...activePerson.songs].map((f, i) => (
@@ -74,7 +123,7 @@ export default function KeepsakeView({ people, activePersonId, onSelectPerson })
               marginTop: "26px",
             }}
           >
-            Always in our memory
+            {t.keepsake.alwaysInMemory}
           </div>
         </div>
       </div>
