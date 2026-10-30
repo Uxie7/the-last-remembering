@@ -4,7 +4,7 @@
 
 ![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue?logo=python)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.115%2B-009688?logo=fastapi)
-![Frontend: Vanilla JS](https://img.shields.io/badge/frontend-vanilla%20JS-F7DF1E?logo=javascript&logoColor=black)
+![Frontend: Next.js](https://img.shields.io/badge/frontend-Next.js-000000?logo=nextdotjs)
 ![License: MIT](https://img.shields.io/badge/license-MIT-green)
 ![Open-weight models](https://img.shields.io/badge/models-open--weight-orange)
 ![LLM: Gemma](https://img.shields.io/badge/LLM-Gemma-4285F4?logo=google)
@@ -24,8 +24,6 @@ Every autumn, families who observe Día de los Muertos build an **ofrenda**: an 
 **The Last Remembering** carries that idea into a small local application. You add the stories, songs, recipes, and sayings of the people in your life. Each person gets a portrait and a candle on a stepped altar, and the candle glows brighter every time you add or revisit a memory. If a name goes unvisited for too long, the flame dims and the app gently invites you to add a story.
 
 Everything runs on your own machine with open-weight models. Recordings of your family never leave your laptop, the app works with the internet off, and your archive is a folder of plain files that no service shutdown can take away.
-
-> **A note on the tradition.** Día de los Muertos is a living Mexican tradition. The author is not from this tradition and was introduced to the idea through popular culture. This project is an attempt to honor the people in the author's own life, using the tradition's imagery with respect and not as a costume. Corrections and guidance from people who observe it are warmly welcomed.
 
 ---
 
