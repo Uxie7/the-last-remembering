@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import MiniHero from "../common/MiniHero";
+import { askQuestion } from "../../utils/api";
 
 export default function AskView({ people, onNavigate, lang, t }) {
   const [askWho, setAskWho] = useState("all");
@@ -21,9 +22,46 @@ export default function AskView({ people, onNavigate, lang, t }) {
           "What was Abuela’s favorite color?",
         ];
 
-  const handleAsk = (queryText) => {
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleAsk = async (queryText) => {
     const q = (queryText || question).trim();
     if (!q) return;
+
+    setQuestion("");
+    setIsLoading(true);
+
+    const personFilter = askWho === "all" ? null : askWho;
+
+    try {
+      const res = await askQuestion(q, personFilter);
+      if (res && res.answer) {
+        setChatMessages((prev) => [
+          ...prev,
+          { type: "user", text: q },
+          res.grounded && res.citations && res.citations.length > 0
+            ? {
+                type: "answer",
+                text: res.answer,
+                citation: {
+                  storyTitle: res.citations[0].title,
+                  personName:
+                    people.find((p) => p.id === res.citations[0].person_id)?.name ||
+                    res.citations[0].person_id,
+                  personId: res.citations[0].person_id,
+                },
+              }
+            : {
+                type: "not-found",
+                text: res.answer || t.ask.notFound,
+              },
+        ]);
+        setIsLoading(false);
+        return;
+      }
+    } catch {
+      // Backend unavailable; fallback to offline keyword retrieval
+    }
 
     const stopWords = "what did was the his her and with that for from about like que cantaba era el la en los las con del".split(
       " "
@@ -89,7 +127,7 @@ export default function AskView({ people, onNavigate, lang, t }) {
           },
     ]);
 
-    setQuestion("");
+    setIsLoading(false);
   };
 
   useEffect(() => {

@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import MiniHero from "../common/MiniHero";
 import { KNOWN_FOODS } from "../../data/initialPeople";
+import { extractFacts, transcribeAudio } from "../../utils/api";
 
 export default function AddMemoryView({
   people,
@@ -59,7 +60,7 @@ export default function AddMemoryView({
         }
       };
 
-      recorder.onstop = () => {
+      recorder.onstop = async () => {
         const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
         const url = URL.createObjectURL(audioBlob);
         setAudioUrl(url);
@@ -67,7 +68,19 @@ export default function AddMemoryView({
         // Turn off stream tracks
         stream.getTracks().forEach((track) => track.stop());
 
-        // In demo mode, simulate transcription filling the textarea:
+        // Attempt live transcription via Whisper API
+        try {
+          showToast(lang === "es" ? "Transcribiendo con Whisper local..." : "Transcribing with local Whisper...");
+          const res = await transcribeAudio(audioBlob);
+          if (res && res.text) {
+            setStory(res.text);
+            showToast(`${t.add.transcribedSuccess} (${recordDuration}s clip)`);
+            return;
+          }
+        } catch {
+          // Fallback demo text if Whisper is offline
+        }
+
         const simulatedVoiceText =
           lang === "es"
             ? "Recuerdo claramente las tardes de domingo cuando la abuela preparaba mole negro y escuchaba Cielito Lindo en la cocina."
@@ -112,7 +125,31 @@ export default function AddMemoryView({
     showToast(t.add.transcribedSuccess);
   };
 
-  const handleExtractFacts = () => {
+  const handleExtractFacts = async () => {
+    // Attempt LLM fact extraction from local Ollama Gemma
+    try {
+      showToast(lang === "es" ? "Extrayendo detalles con Gemma local..." : "Extracting details with local Gemma...");
+      const res = await extractFacts(story, who);
+      if (res && res.facts && res.facts.length > 0) {
+        const foods = res.facts.filter((f) => f.kind === "food").map((f) => f.value);
+        const songs = res.facts.filter((f) => f.kind === "song").map((f) => f.value);
+        const say = res.facts.filter((f) => f.kind === "saying").map((f) => f.value);
+        const places = res.facts.filter((f) => f.kind === "place").map((f) => f.value);
+
+        setProposedFacts({
+          foods,
+          songs,
+          say,
+          places,
+          rawFacts: res.facts,
+        });
+        showToast(lang === "es" ? "Detalles extraídos con éxito" : "Facts extracted successfully");
+        return;
+      }
+    } catch {
+      // Fallback to local keyword extraction if Ollama is not running
+    }
+
     const textLower = story.toLowerCase();
     const sayingsMap = {
       "full belly": "A full belly makes a happy heart",

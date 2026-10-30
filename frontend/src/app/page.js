@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { INITIAL_PEOPLE } from "../data/initialPeople";
 import { translations } from "../data/translations";
+import { getPeople, getPerson, uploadPhoto, checkHealth, saveMemory } from "../utils/api";
 
 // Common UI components
 import SvgDefs from "../components/common/SvgDefs";
@@ -42,6 +43,53 @@ export default function App() {
     showToast(nextLang === "es" ? "Idioma cambiado a Español" : "Language switched to English");
   };
 
+  // Load live people from API
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const apiPeople = await getPeople();
+        if (apiPeople && apiPeople.length > 0) {
+          const fullPeople = await Promise.all(
+            apiPeople.map(async (p) => {
+              try {
+                const detail = await getPerson(p.id);
+                return {
+                  ...detail,
+                  c: detail.color,
+                  rel: detail.relationship,
+                  last: detail.days_since_touch,
+                  img: detail.photo_url,
+                  say: detail.sayings || [],
+                  stories: (detail.stories || []).map((s) => ({
+                    t: s.title,
+                    d: s.told_on || "Recent",
+                    x: s.body,
+                  })),
+                };
+              } catch {
+                return {
+                  ...p,
+                  c: p.color,
+                  rel: p.relationship,
+                  last: p.days_since_touch,
+                  img: p.photo_url,
+                  foods: [],
+                  songs: [],
+                  say: [],
+                  stories: [],
+                };
+              }
+            })
+          );
+          setPeople(fullPeople);
+        }
+      } catch (err) {
+        console.warn("Backend not detected, falling back to local demo state:", err);
+      }
+    }
+    loadData();
+  }, []);
+
   // Synchronize hash routing
   useEffect(() => {
     const handleHash = () => {
@@ -66,21 +114,85 @@ export default function App() {
   };
 
   // Photo upload handler
-  const handlePhotoUpload = (e, personId) => {
+  const handlePhotoUpload = async (e, personId) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
+
+    try {
+      const res = await uploadPhoto(personId, file);
+      const photoUrl = res.photo_url.startsWith("http")
+        ? res.photo_url
+        : `${process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000"}${res.photo_url}`;
       setPeople((prev) =>
-        prev.map((p) => (p.id === personId ? { ...p, img: reader.result } : p))
+        prev.map((p) => (p.id === personId ? { ...p, img: photoUrl, photo_url: photoUrl } : p))
       );
       showToast(t.person.photoSaved);
-    };
-    reader.readAsDataURL(file);
+    } catch {
+      // Fallback to in-browser FileReader if backend is unreachable
+      const reader = new FileReader();
+      reader.onload = () => {
+        setPeople((prev) =>
+          prev.map((p) => (p.id === personId ? { ...p, img: reader.result } : p))
+        );
+        showToast(t.person.photoSaved);
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   // Save Memory handler
-  const handleSaveMemory = ({ personId, title, story, facts }) => {
+  const handleSaveMemory = async ({ personId, title, story, facts }) => {
+    // Format approved facts for backend
+    const approvedFactInputs = [];
+    if (facts.rawFacts && facts.rawFacts.length > 0) {
+      facts.rawFacts.forEach((rf) =>
+        approvedFactInputs.push({ kind: rf.kind, value: rf.value, quote: rf.quote })
+      );
+    } else {
+      (facts.foods || []).forEach((f) => approvedFactInputs.push({ kind: "food", value: f, quote: f }));
+      (facts.songs || []).forEach((s) => approvedFactInputs.push({ kind: "song", value: s, quote: s }));
+      (facts.say || []).forEach((s) => approvedFactInputs.push({ kind: "saying", value: s, quote: s }));
+    }
+
+    try {
+      const res = await saveMemory({
+        person_id: personId,
+        title: title,
+        body: story,
+        told_on: lang === "es" ? "Hoy" : "Today",
+        facts: approvedFactInputs,
+      });
+
+      if (res && res.person) {
+        const updated = res.person;
+        setPeople((prev) =>
+          prev.map((p) =>
+            p.id === personId
+              ? {
+                  ...p,
+                  ...updated,
+                  c: updated.color || p.c,
+                  rel: updated.relationship || p.rel,
+                  last: updated.days_since_touch,
+                  img: updated.photo_url || p.img,
+                  say: updated.sayings || p.say,
+                  stories: (updated.stories || []).map((s) => ({
+                    t: s.title,
+                    d: s.told_on || "Recent",
+                    x: s.body,
+                  })),
+                }
+              : p
+          )
+        );
+        showToast(t.add.savedSuccess);
+        navigate(`person-${personId}`);
+        return;
+      }
+    } catch (err) {
+      console.warn("Backend saveMemory failed, using client-side fallback:", err);
+    }
+
     setPeople((prev) =>
       prev.map((p) => {
         if (p.id !== personId) return p;

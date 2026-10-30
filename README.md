@@ -320,14 +320,16 @@ the-last-remembering/
 
 ## 🗺️ Roadmap
 
-- [x] Interface prototype with sample data
-- [ ] Local transcription with Whisper
-- [ ] Fact extraction with quote verification
-- [ ] Retrieval-based Q&A with citations
-- [ ] Persistent storage and photo upload
-- [ ] Printable keepsake export
-- [ ] Gentle reminders for fading candles
-- [ ] Optional narration of remembrances with a local text-to-speech voice
+- [x] Interface prototype with sample data (Next.js component-based frontend)
+- [x] Local transcription with Whisper
+- [x] Fact extraction with verbatim quote verification (C5)
+- [x] Retrieval-based Q&A with citations and refusal rules (C2/C3)
+- [x] Persistent SQLite storage, photo upload, and glow engine
+- [x] Printable keepsake export
+- [x] Gentle reminders for fading candles
+- [x] Optional narration of remembrances with local offline audio
+- [x] Portable `.ofrenda` archive export & import (`scripts/export_archive.py`)
+- [x] Automated test suite & CI workflow (`.github/workflows/ci.yml`)
 - [ ] Model comparison view (swap Gemma sizes and compare answers)
 
 ---
