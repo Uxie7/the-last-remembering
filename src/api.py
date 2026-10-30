@@ -42,19 +42,41 @@ from src.adapters.embed_ollama import OllamaEmbeddings
 from src.adapters.stt_faster_whisper import FasterWhisperSTT
 from src.pipeline import MemoryPipeline
 
+from contextlib import asynccontextmanager
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Auto-seed demo ancestors on fresh startup if empty
+    try:
+        store = SqliteStore(DB_PATH)
+        if len(store.get_people()) == 0:
+            from scripts.seed_demo import seed_demo_data
+            seed_demo_data()
+    except Exception as e:
+        print(f"Startup check warning: {e}")
+    yield
+
 app = FastAPI(
     title="The Last Remembering API",
     description="Offline family memory keeper inspired by the Día de los Muertos ofrenda",
     version="1.0.0",
+    lifespan=lifespan,
 )
 
-# CORS configuration - Localhost only per C6
-ALLOWED_ORIGINS = [
+# CORS configuration - Localhost by default per C6, or configured via CORS_ORIGINS
+from src.config import CORS_ORIGINS
+
+DEFAULT_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
     "http://localhost:8000",
     "http://127.0.0.1:8000",
 ]
+
+if CORS_ORIGINS:
+    ALLOWED_ORIGINS = [o.strip() for o in CORS_ORIGINS.split(",") if o.strip()]
+else:
+    ALLOWED_ORIGINS = DEFAULT_ORIGINS
 
 app.add_middleware(
     CORSMiddleware,

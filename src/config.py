@@ -23,6 +23,7 @@ WHISPER_MODEL = os.getenv("WHISPER_MODEL", "small")
 WHISPER_DEVICE = os.getenv("WHISPER_DEVICE", "cpu")
 TOP_K = int(os.getenv("TOP_K", "4"))
 MIN_RELEVANCE = float(os.getenv("MIN_RELEVANCE", "0.35"))
-HOST = os.getenv("HOST", "127.0.0.1")
+HOST = os.getenv("HOST", "0.0.0.0" if os.getenv("RENDER") else "127.0.0.1")
 PORT = int(os.getenv("PORT", "8000"))
+CORS_ORIGINS = os.getenv("CORS_ORIGINS", "")
 
